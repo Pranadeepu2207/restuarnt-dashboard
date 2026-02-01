@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import api from "../services/api";
 
 function OrdersPage() {
@@ -6,19 +6,19 @@ function OrdersPage() {
     const [status, setStatus] = useState("");
     const [page, setPage] = useState(1);
 
-    const limit = 6; // orders per page
+    const limit = 6;
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         const params = { page, limit };
         if (status) params.status = status;
 
         const res = await api.get("/orders", { params });
         setOrders(res.data);
-    };
+    }, [page, status]);
 
     useEffect(() => {
         fetchOrders();
-    }, [status, page]);
+    }, [fetchOrders]);
 
     const updateStatus = async (id, newStatus) => {
         await api.patch(`/orders/${id}/status`, { status: newStatus });
@@ -31,12 +31,11 @@ function OrdersPage() {
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-4">Orders Dashboard</h1>
 
-            {/* Status Filter */}
             <select
                 className="border p-2 mb-4"
                 onChange={(e) => {
                     setStatus(e.target.value);
-                    setPage(1); // reset page when filter changes
+                    setPage(1);
                 }}
             >
                 <option value="">All</option>
@@ -47,7 +46,6 @@ function OrdersPage() {
                 <option>Cancelled</option>
             </select>
 
-            {/* Orders List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {orders.length === 0 ? (
                     <p className="text-center col-span-2">No orders found</p>
@@ -74,7 +72,6 @@ function OrdersPage() {
                 )}
             </div>
 
-            {/* Pagination */}
             <div className="flex justify-center gap-3 mt-4">
                 <button
                     onClick={() => setPage(page - 1)}
@@ -89,9 +86,7 @@ function OrdersPage() {
 
                 <button
                     onClick={() => {
-                        if (!isNextDisabled) {
-                            setPage(page + 1);
-                        }
+                        if (!isNextDisabled) setPage(page + 1);
                     }}
                     disabled={isNextDisabled}
                     className={`px-3 py-1 rounded ${isNextDisabled ? "bg-gray-200 cursor-not-allowed" : "bg-gray-300"

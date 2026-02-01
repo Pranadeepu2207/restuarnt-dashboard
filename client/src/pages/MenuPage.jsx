@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import api from "../services/api";
 import { useDebounce } from "../hooks/useDebounce";
 import MenuForm from "../components/MenuForm";
@@ -12,19 +12,23 @@ function MenuPage() {
 
     const debouncedSearch = useDebounce(search, 300);
 
-    const fetchMenu = async () => {
+    const fetchMenu = useCallback(async () => {
         const params = {};
-
         if (category) params.category = category;
         if (availability) params.isAvailable = availability;
 
         const res = await api.get("/menu", { params });
         setMenu(res.data);
-    };
+    }, [category, availability]);
+
+    const searchMenu = useCallback(async () => {
+        const res = await api.get(`/menu/search?q=${debouncedSearch}`);
+        setMenu(res.data);
+    }, [debouncedSearch]);
 
     useEffect(() => {
         fetchMenu();
-    }, [category, availability]);
+    }, [fetchMenu]);
 
     useEffect(() => {
         if (debouncedSearch) {
@@ -32,12 +36,7 @@ function MenuPage() {
         } else {
             fetchMenu();
         }
-    }, [debouncedSearch]);
-
-    const searchMenu = async () => {
-        const res = await api.get(`/menu/search?q=${debouncedSearch}`);
-        setMenu(res.data);
-    };
+    }, [debouncedSearch, fetchMenu, searchMenu]);
 
     const deleteItem = async (id) => {
         await api.delete(`/menu/${id}`);
@@ -49,8 +48,8 @@ function MenuPage() {
 
         setMenu(
             menu.map((item) =>
-                item._id === id ? { ...item, isAvailable: !status } : item,
-            ),
+                item._id === id ? { ...item, isAvailable: !status } : item
+            )
         );
 
         try {
